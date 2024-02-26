@@ -53,7 +53,10 @@ class SPGen(nn.Module):
         
 
     def forward(self, x):
-        x1, x2, x3, x4 = x
+        x1 = x[7]
+        x2 = x[15]
+        x3 = x[23]
+        x4 = x[31]
 
         x1 = self.up1(x1)
         x2 = self.up1(x2)
@@ -112,12 +115,7 @@ class UNSAM(nn.Module):
         b = x.shape[0]
         image_embeddings, stacked_embedding = self.image_encoder(x, domain_seq)
 
-        spgen_list = []
-
-        for depth_num in range(7, 32, 8):
-            spgen_list.append(stacked_embedding[:,depth_num,:,:].unsqueeze(0))
-
-        spgen1, spgen2, spgen3, spgen4 = self.spgen(spgen_list)
+        spgen1, spgen2, spgen3, spgen4 = self.spgen(stacked_embedding)
 
         spgen1 = self.up1(spgen1)
         spgen2 = self.up2(spgen2)
