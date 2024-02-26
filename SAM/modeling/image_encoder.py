@@ -127,7 +127,7 @@ class DTEncoder(nn.Module):
 
         
 
-        return each_depth[-1], torch.stack(each_depth, dim=1)
+        return each_depth[-1], torch.stack(each_depth, dim=0)
 
 
 class Block(nn.Module):
