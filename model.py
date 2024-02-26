@@ -76,7 +76,7 @@ class UNSAM(nn.Module):
             mask_in_chans=16,
             )
         
-        self.mask_decoder = MaskDecoder(
+        self.mask_decoder = DQDecoder(
             transformer=TwoWayTransformer(
                 depth=2,
                 embedding_dim=256,
