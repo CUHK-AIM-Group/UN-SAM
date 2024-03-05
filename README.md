@@ -28,7 +28,12 @@ python train.py --dataset data/$YOUR DATASET NAME$ --sam_pretrain pretrain/$SAM 
 ## Cite
 If you find our work useful in your research or publication, please cite our work:
 ```
-
+@article{chen2024sam,
+  title={UN-SAM: Universal Prompt-Free Segmentation for Generalized Nuclei Images},
+  author={Chen, Zhen and Xu, Qing and Liu, Xinyu and Yuan, Yixuan},
+  journal={arXiv preprint arXiv:2402.16663},
+  year={2024}
+}
 ```
 
 
