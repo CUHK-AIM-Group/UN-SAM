@@ -59,9 +59,9 @@ class SPGen(nn.Module):
         x4 = x[31]
 
         x1 = self.up1(x1)
-        x2 = self.up1(x2)
-        x3 = self.up1(x3)
-        x4 = self.up1(x4)
+        x2 = self.up2(x2)
+        x3 = self.up3(x3)
+        x4 = self.up4(x4)
 
         return x1, x2, x3, x4
 
