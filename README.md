@@ -2,7 +2,8 @@
 This repository is an official PyTorch implementation of the paper **"UN-SAM: Universal Prompt-Free Segmentation for Generalized Nucleus Images"** [[paper]()] submitted to IEEE Transactions on Medical Imaging.
 
 
-## UN-SAM for Nuclei Image Segmentation
+## NEWS
+* **` Jun. 28th, 2024`:** We update [UNSAM-Base](https://drive.google.com/file/d/1ngSKVB7i1v2SFt39ipYixezKe-7kNejN/view?usp=sharing) weights and model scripts. UNSAM-Large and UNSAM-Huge weights are coming soon.
 
 ## Dependencies
 * Python 3.10
@@ -24,6 +25,8 @@ mkdir data; mkdir pretrain;
 ```python
 python train.py --dataset data/$YOUR DATASET NAME$ --sam_pretrain pretrain/$SAM CHECKPOINT$
 ```
+## Checkpoints
+* UN
 
 ## Cite
 If you find our work useful in your research or publication, please cite our work:
