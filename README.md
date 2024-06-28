@@ -21,8 +21,6 @@ mkdir data; mkdir pretrain;
 ```python
 python train.py --dataset data/$YOUR DATASET NAME$ --sam_pretrain pretrain/$SAM CHECKPOINT$
 ```
-## Checkpoints
-* UN
 
 ## Cite
 If you find our work useful in your research or publication, please cite our work:
