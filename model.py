@@ -7,6 +7,8 @@ from SAM.modeling.mask_decoder import DQDecoder
 from SAM.modeling.prompt_encoder import PromptEncoder
 from SAM.modeling.transformer import TwoWayTransformer
 from SAM.modeling.common import LayerNorm2d
+from SAM.modeling.image_encoder import DTEncoder
+from functools import partial
 from typing import List, Tuple, Type
 
 
@@ -14,63 +16,55 @@ class SPGen(nn.Module):
     def __init__(self):
         super(SPGen, self).__init__()
 
-        self.up1 = nn.Sequential(nn.Conv2d(256, 64, kernel_size=2, stride=2),
-            LayerNorm2d(64),
-            nn.GELU(),
-            nn.Conv2d(64, 16, kernel_size=1, stride=1),
-            LayerNorm2d(16),
-            nn.GELU(),
-            nn.Conv2d(16, 1, kernel_size=1))
+        self.up1 = nn.Sequential(nn.MaxPool2d(kernel_size=2, stride=2))
 
-        self.up2 = nn.Sequential(nn.ConvTranspose2d(256, 64, kernel_size=1, stride=1),
-            LayerNorm2d(64),
-            nn.GELU(),
-            nn.ConvTranspose2d(64, 16, kernel_size=1, stride=1),
-            LayerNorm2d(16),
-            nn.GELU(),
-            nn.Conv2d(16, 1, kernel_size=1))
+        self.up3 = nn.Sequential(nn.ConvTranspose2d(256, 64, kernel_size=2, stride=2))
 
-
-        self.up3 = nn.Sequential(nn.ConvTranspose2d(256, 64, kernel_size=2, stride=2),
-            LayerNorm2d(64),
-            nn.GELU(),
-            nn.ConvTranspose2d(64, 16, kernel_size=1, stride=1),
-            LayerNorm2d(16),
-            nn.GELU(),
-            nn.Conv2d(16, 1, kernel_size=1))
-
- 
         self.up4 = nn.Sequential(nn.ConvTranspose2d(256, 64, kernel_size=2, stride=2),
             LayerNorm2d(64),
             nn.GELU(),
-            nn.ConvTranspose2d(64, 16, kernel_size=2, stride=2),
-            LayerNorm2d(16),
-            nn.GELU(),
-            nn.Conv2d(16, 1, kernel_size=1))
+            nn.ConvTranspose2d(64, 16, kernel_size=2, stride=2))
    
 
-
+        self.final1 = nn.Conv2d(256, 1, kernel_size=1)
+        self.final2 = nn.Conv2d(256, 1, kernel_size=1)
+        self.final3 = nn.Conv2d(64, 1, kernel_size=1)
+        self.final4 = nn.Conv2d(16, 1, kernel_size=1)
         
 
     def forward(self, x):
-        x1 = x[7]
-        x2 = x[15]
-        x3 = x[23]
-        x4 = x[31]
 
-        x1 = self.up1(x1)
-        x2 = self.up2(x2)
-        x3 = self.up3(x3)
-        x4 = self.up4(x4)
+        x1 = self.up1(x)
+        x3 = self.up3(x)
+        x4 = self.up4(x)
+
+        x1 = self.final1(x1)
+        x2 = self.final2(x)
+        x3 = self.final3(x3)
+        x4 = self.final4(x4)
 
         return x1, x2, x3, x4
 
 
 class UNSAM(nn.Module):
-    def __init__(self, image_encoder):
+    def __init__(self, domain_num):
         super(UNSAM, self).__init__()
 
-        self.image_encoder = image_encoder
+        self.image_encoder = DTEncoder(
+                depth=12,
+                embed_dim=768,
+                img_size=1024,
+                mlp_ratio=4,
+                norm_layer=partial(torch.nn.LayerNorm, eps=1e-6),
+                num_heads=12,
+                patch_size=16,
+                qkv_bias=True,
+                use_rel_pos=True,
+                global_attn_indexes=[2, 5, 8, 11],
+                window_size=14,
+                out_chans=256,
+                domain_num=domain_num
+            )
 
         self.prompt_encoder = PromptEncoder(
             embed_dim=256,
@@ -87,6 +81,7 @@ class UNSAM(nn.Module):
                 num_heads=8,
             ),
             transformer_dim=256,
+            class_num=domain_num + 1
             )
 
 
@@ -95,53 +90,26 @@ class UNSAM(nn.Module):
         self.up2 = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True)
         self.up3 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
 
-        self.num_mask_tokens = 12
+        self.num_mask_tokens = domain_num + 1
         self.mask_query = nn.Embedding(self.num_mask_tokens, 256)
-
-    def postprocess_masks(
-        self,
-        masks: torch.Tensor,
-        input_size: Tuple[int, ...],
-        original_size: Tuple[int, ...],
-    ) -> torch.Tensor:
-
-        masks = F.interpolate(masks, original_size, mode="bilinear", align_corners=False)
-        return masks
-        
-
     
     def forward(self, x, domain_seq, img_id=None):
 
         b = x.shape[0]
-        image_embeddings, stacked_embedding = self.image_encoder(x, domain_seq)
+        image_embeddings = self.image_encoder(x, domain_seq)
 
-        spgen1, spgen2, spgen3, spgen4 = self.spgen(stacked_embedding)
+        spgen1, spgen2, spgen3, spgen4 = self.spgen(image_embeddings)
 
         spgen1 = self.up1(spgen1)
         spgen2 = self.up2(spgen2)
         spgen3 = self.up3(spgen3)
 
-        spgen1_prob = torch.sigmoid(spgen1.detach())
-        spgen1_prob[spgen1_prob >= 0.95] = 1
-        spgen1_prob[spgen1_prob < 0.95] = 0
+        output_coarse = spgen4 + spgen3 + spgen2 + spgen1
 
+        output_prob = torch.sigmoid(output_coarse.detach())
+        output_prob[output_prob >= 0.95] = 1
+        output_prob[output_prob < 0.95] = 0
 
-        spgen2_prob = torch.sigmoid(spgen2.detach())
-        spgen2_prob[spgen2_prob >= 0.95] = 1
-        spgen2_prob[spgen2_prob < 0.95] = 0
-
-
-        spgen3_prob = torch.sigmoid(spgen3.detach())
-        spgen3_prob[spgen3_prob >= 0.95] = 1
-        spgen3_prob[spgen3_prob < 0.95] = 0
-        
-
-        spgen4_prob = torch.sigmoid(spgen4.detach())
-        spgen4_prob[spgen4_prob >= 0.95] = 1
-        spgen4_prob[spgen4_prob < 0.95] = 0
-
-        output_coarse = spgen1_prob + spgen2_prob + spgen3_prob + spgen4_prob
-        output_coarse[output_coarse > 1] = 1
 
         outputs_mask = []
 
@@ -151,7 +119,7 @@ class UNSAM(nn.Module):
             sparse_embeddings, dense_embeddings = self.prompt_encoder(
                 points=None,
                 boxes=None,
-                masks=output_coarse[idx].unsqueeze(0),
+                masks=output_prob[idx].unsqueeze(0),
             )
 
             image_embeddings_dec = image_embeddings[idx].unsqueeze(0)
@@ -171,11 +139,12 @@ class UNSAM(nn.Module):
                 src=mask_src,
                 pos_src=mask_pos_src,
                 tokens=tokens_mask,
+                domain_seq=domain_seq
             )
 
-            masks = self.postprocess_masks(low_res_masks.squeeze(0), (256,256), (1024,1024))
+            masks = F.interpolate(low_res_masks, (1024, 1024), mode="bilinear", align_corners=False)
 
-            outputs_mask.append(masks)
+            outputs_mask.append(masks.squeeze(0))
             
 
-        return torch.stack(outputs_mask, dim=0), spgen1 + spgen2 + spgen3 + spgen4
+        return torch.stack(outputs_mask, dim=0), output_coarse
