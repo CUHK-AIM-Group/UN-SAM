@@ -20,6 +20,7 @@ class DQDecoder(nn.Module):
         transformer_dim: int,
         transformer: nn.Module,
         activation: Type[nn.Module] = nn.GELU,
+        class_num: int
     ) -> None:
         """
         Predicts masks given an image and prompt embeddings, using a
@@ -40,6 +41,7 @@ class DQDecoder(nn.Module):
         super().__init__()
         self.transformer_dim = transformer_dim
         self.transformer = transformer
+        self.class_num = class_num
 
         self.output_upscaling = nn.Sequential(
             nn.ConvTranspose2d(transformer_dim, transformer_dim // 4, kernel_size=2, stride=2),
@@ -51,7 +53,7 @@ class DQDecoder(nn.Module):
         self.output_hypernetworks_mlps = nn.ModuleList(
             [
                 MLP(transformer_dim, transformer_dim, transformer_dim // 8, 3)
-                for i in range(12)
+                for i in range(class_num)
             ]
         )
         
@@ -62,6 +64,7 @@ class DQDecoder(nn.Module):
         src: torch.Tensor,
         pos_src: torch.Tensor,
         tokens: torch.Tensor,
+        domain_seq: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Predict masks given image and prompt embeddings.
@@ -84,11 +87,14 @@ class DQDecoder(nn.Module):
             tokens=tokens,
         )
 
+        multimask_output = False
+        if domain_seq == 4:
+            multimask_output = True
         # Select the correct mask or masks for output
-        # if multimask_output:
-        #     mask_slice = slice(1, None)
-        # else:
-        mask_slice = slice(0, 1)
+        if multimask_output:
+            mask_slice = slice(domain_seq - 1, domain_seq + 1)
+        else:
+            mask_slice = slice(domain_seq-1, domain_seq)
         masks = masks[:, mask_slice, :, :]
 
         # Prepare output
@@ -110,7 +116,7 @@ class DQDecoder(nn.Module):
         src = src.transpose(1, 2).view(b, c, h, w)
         upscaled_embedding = self.output_upscaling(src)
         hyper_in_list: List[torch.Tensor] = []
-        for i in range(12):
+        for i in range(self.class_num):
             hyper_in_list.append(self.output_hypernetworks_mlps[i](hs[:, i, :]))
         hyper_in = torch.stack(hyper_in_list, dim=1)
         
