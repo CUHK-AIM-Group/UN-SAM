@@ -110,24 +110,16 @@ class DTEncoder(nn.Module):
         
 
     def forward(self, x, domain_seq):
-
-        B = x.shape[0]
-    
         x = self.patch_embed(x)
-
         if self.pos_embed is not None:
             x = x + self.pos_embed
 
-        each_depth = []
-
         for blk in self.blocks:
             x = blk(x, domain_seq)
-            x_ = self.neck(x.permute(0, 3, 1, 2))
-            each_depth.append(x_)
 
-        
+        x = self.neck(x.permute(0, 3, 1, 2))
 
-        return each_depth[-1], torch.stack(each_depth, dim=0)
+        return x
 
 
 class Block(nn.Module):
@@ -184,6 +176,9 @@ class Block(nn.Module):
 
         self.p_domain_all = DomainCommon(dim)
         self.p_domain1 = DomainSpecific(dim)
+        self.p_domain2 = DomainSpecific(dim)
+        self.p_domain3 = DomainSpecific(dim)
+        self.p_domain4 = DomainSpecific(dim)
 
 
         #-----------------------------------------------
@@ -210,9 +205,19 @@ class Block(nn.Module):
 
         x_dc = self.p_domain_all(xn)
 
-        x_ds = 0.5 * self.p_domain1(x_dc)
+        if domain_seq == 1:
+            x_ds = 0.5 * self.p_domain1(x_dc)
 
-        x = x + self.mlp(x_dc) + x_ds
+        if domain_seq == 2:
+            x_ds = 0.5 * self.p_domain2(x_dc)
+
+        if domain_seq == 3:
+            x_ds = 0.5 * self.p_domain3(x_dc)
+
+        if domain_seq == 4:
+            x_ds = 0.5 * self.p_domain4(x_dc)
+
+        x = x + self.mlp(xn) + x_ds
 
         # x = x + self.mlp(self.norm2(x))
         #-----------------------------------------------
@@ -283,31 +288,13 @@ class Attention(nn.Module):
     def forward(self, x, domain_seq):
         B, H, W, _ = x.shape
         # qkv with shape (3, B, nHead, H * W, C)
-        qkv = self.qkv(x).reshape(B, H * W, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
+        qkv = self.qkv(x)
+
+        qkv = qkv.reshape(B, H * W, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
         # q, k, v with shape (B * nHead, H * W, C)
-        # q, k, v = qkv.reshape(3, B * self.num_heads, H * W, -1).unbind(0)
-
-        #-----------------------------------------------
-        q, k, v = qkv[0], qkv[1], qkv[2]
-
-        B_ = q.shape[0]
-
-
-        deep_QKV_embeddings = self.deep_QKV_embeddings_domain1
-
-
-        # deep_QKV_embeddings = torch.cat((self.deep_QKV_embeddings_domain1, self.deep_QKV_embeddings_domain2, self.deep_QKV_embeddings_domain3), dim=1)
-        k = torch.cat((k, self.QKV_dropout(self.QKV_proj(deep_QKV_embeddings).expand(B_, -1, -1, -1))), dim=2)
-        v = torch.cat((v, self.QKV_dropout(self.QKV_proj(deep_QKV_embeddings).expand(B_, -1, -1, -1))), dim=2)
-
-        q = q.reshape(B * self.num_heads, H * W, -1)
-        k = k.reshape(B * self.num_heads, H * W + self.num_tokens, -1)
-        v = v.reshape(B * self.num_heads, H * W + self.num_tokens, -1)
-        #-----------------------------------------------
-
+        q, k, v = qkv.reshape(3, B * self.num_heads, H * W, -1).unbind(0)
 
         attn = (q * self.scale) @ k.transpose(-2, -1)
-    
 
         if self.use_rel_pos:
             attn = add_decomposed_rel_pos(attn, q, self.rel_pos_h, self.rel_pos_w, (H, W), (H, W))
@@ -440,7 +427,7 @@ def add_decomposed_rel_pos(
     attn = attn.view(B, q_h, q_w, -1)
     attn[:,:,:,:k_len] = attn[:,:,:,:k_len] + rel_k[:, :, :, :]
 
-    attn = attn.view(B, q_h * q_w, k_h * k_w + 10)
+    attn = attn.view(B, q_h * q_w, k_h * k_w)
 
     return attn
 
