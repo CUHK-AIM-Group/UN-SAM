@@ -1,5 +1,5 @@
-# Universal Prompt-Free Segmentation for Generalized Nucleus Images (UN-SAM)
-This repository is an official PyTorch implementation of the paper **"UN-SAM: Universal Prompt-Free Segmentation for Generalized Nucleus Images"** [[paper]()] submitted to IEEE Transactions on Medical Imaging.
+# UN-SAM: Universal Prompt-Free Segmentation for Generalized Nuclei Images
+This repository is an official PyTorch implementation of the paper **"UN-SAM: Universal Prompt-Free Segmentation for Generalized Nucleus Images"** [[paper]()] Accepted by Medical Image Analysis.
 
 ## Dependencies
 * Python 3.10
