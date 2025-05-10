@@ -1,5 +1,5 @@
-# UN-SAM: Universal Prompt-Free Segmentation for Generalized Nuclei Images
-This repository is an official PyTorch implementation of the paper **"UN-SAM: Universal Prompt-Free Segmentation for Generalized Nucleus Images"** [[paper]()] Accepted by Medical Image Analysis.
+# UN-SAM: Domain-Adaptive Self-Prompt Segmentation for Universal Nuclei Images
+This repository is an official PyTorch implementation of the paper **"UN-SAM: Domain-Adaptive Self-Prompt Segmentation for Universal Nuclei Images"** [[paper](https://www.sciencedirect.com/science/article/abs/pii/S1361841525001549)] accepted by Medical Image Analysis.
 
 ## Dependencies
 * Python 3.10
@@ -25,11 +25,13 @@ python train.py --dataset data/$YOUR DATASET NAME$ --sam_pretrain pretrain/$SAM 
 ## Cite
 If you find our work useful in your research or publication, please cite our work:
 ```
-@article{chen2024sam,
-  title={UN-SAM: Universal Prompt-Free Segmentation for Generalized Nuclei Images},
+@article{chen2025sam,
+  title={UN-SAM: Domain-adaptive self-prompt segmentation for universal nuclei images},
   author={Chen, Zhen and Xu, Qing and Liu, Xinyu and Yuan, Yixuan},
-  journal={arXiv preprint arXiv:2402.16663},
-  year={2024}
+  journal={Medical Image Analysis},
+  pages={103607},
+  year={2025},
+  publisher={Elsevier}
 }
 ```
 
