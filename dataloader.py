@@ -11,7 +11,7 @@ import albumentations as A
 
 class BinaryLoader(Dataset):
         def __init__(self, data_name, jsfiles, transforms, pixel_mean=[123.675, 116.280, 103.530], pixel_std=[58.395, 57.12, 57.375]):
-            self.path = f'/data/xq/sam_med/datasets/{data_name}'
+            self.path = f'datasets'
             self.jsfiles = jsfiles
             self.img_tesnor = pytorch_transforms.Compose([pytorch_transforms.ToTensor(), ])
             self.transforms = transforms
@@ -28,19 +28,19 @@ class BinaryLoader(Dataset):
             image_id = list(self.jsfiles[idx].split('.'))[0]
 
             image_path = os.path.join(self.path,'image_1024/',image_id)
-            mask_path = os.path.join(self.path,'masks_binary/',image_id)
- 
+            mask_path = os.path.join(self.path,'mask_1024/',image_id)
     
             img = io.imread(image_path+'.png')[:,:,:3].astype('float32')
             mask = io.imread(mask_path+'.png', as_gray=True)
 
+            mask[mask>0]=255
+            
             data_group = self.transforms(image=img, mask=mask)
             img_resized = data_group['image']
             mask = data_group['mask']
 
             img = self.img_tesnor(img)
             img = self.preprocess(img)
-
    
             return (img_resized, img, mask, image_id)
         
