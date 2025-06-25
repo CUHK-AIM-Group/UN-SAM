@@ -178,7 +178,6 @@ class Block(nn.Module):
         self.p_domain1 = DomainSpecific(dim)
         self.p_domain2 = DomainSpecific(dim)
         self.p_domain3 = DomainSpecific(dim)
-        self.p_domain4 = DomainSpecific(dim)
 
 
         #-----------------------------------------------
@@ -214,9 +213,6 @@ class Block(nn.Module):
         if domain_seq == 3:
             x_ds = 0.5 * self.p_domain3(x_dc)
 
-        if domain_seq == 4:
-            x_ds = 0.5 * self.p_domain4(x_dc)
-
         x = x + self.mlp(xn) + x_ds
 
         # x = x + self.mlp(self.norm2(x))
@@ -237,7 +233,6 @@ class Attention(nn.Module):
         use_rel_pos: bool = False,
         rel_pos_zero_init: bool = True,
         input_size: Optional[Tuple[int, int]] = None,
-        domain_num: int = 3,
     ) -> None:
         """
         Args:
@@ -265,27 +260,8 @@ class Attention(nn.Module):
             # initialize relative positional embeddings
             self.rel_pos_h = nn.Parameter(torch.zeros(2 * input_size[0] - 1, head_dim))
             self.rel_pos_w = nn.Parameter(torch.zeros(2 * input_size[1] - 1, head_dim))
-        #-----------------------------------------------
-        self.num_tokens = 10
-        
-        # add vk prompt layers jointly
-        head_fixed, num_patches_QKV, head_size_fixed = self.num_heads, self.num_tokens, head_dim
 
-        self.deep_QKV_embeddings_domain1 = nn.Parameter(torch.zeros(head_fixed, num_patches_QKV, head_size_fixed))
-
-
-        # xavier_uniform initialization
-        patch_size = 16      
-        val = math.sqrt(6. / float(3 * reduce(mul, (patch_size, patch_size), 1) + 16))
-
-        nn.init.uniform_(self.deep_QKV_embeddings_domain1.data, -val, val)
-
-
-        self.QKV_proj = nn.Identity()
-        self.QKV_dropout = nn.Dropout(0) # should add config here
-        #-----------------------------------------------
-
-    def forward(self, x, domain_seq):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, H, W, _ = x.shape
         # qkv with shape (3, B, nHead, H * W, C)
         qkv = self.qkv(x)
