@@ -19,7 +19,7 @@ mkdir data; mkdir pretrain;
 ## Quickstart 
 * Train the UN-SAM with the default settings:
 ```python
-python train.py --dataset data/$YOUR DATASET NAME$ --sam_pretrain pretrain/$SAM CHECKPOINT$
+python train.py --domain_num $NUMBER OF DOMAINS$ --size $B$ --sam_pretrain pretrain/$SAM CHECKPOINT$
 ```
 
 ## Data Preparation
@@ -28,13 +28,21 @@ The structure is as follows.
 UN-SAM
 ├── data
 │   ├── DSB-2018
-│     ├── image_1024
-│       ├── DSB_0000000.png
-|       ├── ...
-|     ├── mask_1024
-│       ├── DSB_0000000.png
-|       ├── ...
 |     ├── data_split.json
+│   ├── MoNuSeg
+|     ├── data_split.json
+│   ├── TNBC
+|     ├── data_split.json
+│   ├── image_1024
+│     ├── DSB_0000000.png
+│     ├── MoNuSeg_0000000.png
+│     ├── TNBC_0000000.png
+|     ├── ...
+|   ├── mask_1024
+│     ├── DSB_0000000.png
+│     ├── MoNuSeg_0000000.png
+│     ├── TNBC_0000000.png
+|     ├── ...   
 ```
 
 ## Pre-trained Model Zoo 
