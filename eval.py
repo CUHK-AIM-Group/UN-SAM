@@ -76,14 +76,14 @@ if __name__ == '__main__':
 
     os.makedirs(save_path,exist_ok=True)
 
-    args.jsonfile = f'/data/xq/sam_med/datasets/{args.dataset}/data_split.json'
+    args.jsonfile = f'datasets/{args.dataset}/data_split.json'
     
     with open(args.jsonfile, 'r') as f:
         df = json.load(f)
 
     test_files = df['test']
-    test_dataset = BinaryLoader(args.dataset, test_files, A.Compose([
-                                        A.Resize(256, 256),
+    test_dataset = BinaryLoader("mask_1024", test_files, A.Compose([
+                                        A.Resize(1024, 1024),
                                         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                                         ToTensor()
                                         ]))
@@ -120,7 +120,7 @@ if __name__ == '__main__':
             domain_num=args.domain_num
         )
 
-    model = ModelName(image_encoder=vit_h, num_cls=1)
+    model = ModelName(image_encoder=vit_b, num_cls=1)
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
