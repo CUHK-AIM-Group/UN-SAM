@@ -87,14 +87,8 @@ class DQDecoder(nn.Module):
             tokens=tokens,
         )
 
-        multimask_output = False
-        if domain_seq == 4:
-            multimask_output = True
-        # Select the correct mask or masks for output
-        if multimask_output:
-            mask_slice = slice(domain_seq - 1, domain_seq + 1)
-        else:
-            mask_slice = slice(domain_seq-1, domain_seq)
+
+        mask_slice = slice(domain_seq, domain_seq + 1)
         masks = masks[:, mask_slice, :, :]
 
         # Prepare output
