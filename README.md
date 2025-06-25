@@ -22,6 +22,30 @@ mkdir data; mkdir pretrain;
 python train.py --dataset data/$YOUR DATASET NAME$ --sam_pretrain pretrain/$SAM CHECKPOINT$
 ```
 
+## Data Preparation
+The structure is as follows.
+```
+UN-SAM
+├── data
+│   ├── DSB-2018
+│     ├── image_1024
+│       ├── DSB_0000000.png
+|       ├── ...
+|     ├── mask_1024
+│       ├── DSB_0000000.png
+|       ├── ...
+|     ├── data_split.json
+```
+
+## Pre-trained Model Zoo 
+We provide all pre-trained models here.
+| Size | Domains | Checkpoints |
+|-----|-----|-----|
+|UN-SAM-B| DSB-2018 + MoNuSeg + TNBC |[Google Drive](https://drive.google.com/drive/folders/1wx5LYQ5hIR53NonsDSmTm0krtnR6Iq09?usp=sharing)|
+|UN-SAM-L| DSB-2018 + MoNuSeg + TNBC |TBA|
+|UN-SAM-H| DSB-2018 + MoNuSeg + TNBC |TBA|
+
+
 ## Cite
 If you find our work useful in your research or publication, please cite our work:
 ```
